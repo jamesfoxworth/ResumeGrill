@@ -2,6 +2,7 @@ import re
 from project import Project
 from experience import Experience
 from education import Education
+from user import User
 
 def preprocess_tex(lines):
     """
@@ -51,6 +52,56 @@ def parseFromText(text, verbose=False):
             if line.startswith('\\resumeSubheading') or line.startswith('\\resumeProjectHeading'):
                 print(line)
     
+    # --- HEADER FIELDS ---
+    name = email = phone = location = linkedin = None
+    for i, line in enumerate(lines):
+        if line.startswith('\\begin{center}'):
+            # Look ahead for the next few lines
+            for j in range(i+1, min(i+7, len(lines))):
+                l = lines[j]
+                # Name
+                m = re.search(r'\\textbf\{\\Huge \\scshape ([^}]+)\}', l)
+                if m:
+                    name = m.group(1).strip()
+                # Phone
+                m = re.search(r'\\small ([^$]+) \$\|\$', l)
+                if m:
+                    phone = m.group(1).strip()
+                # Email
+                m = re.search(r'mailto:([^}]+)\}', l)
+                if m:
+                    email = m.group(1).strip()
+                # LinkedIn
+                m = re.search(r'\\href\{(https://www\.linkedin\.com/in/[^}]+)\}', l)
+                if m:
+                    linkedin = m.group(1).strip()
+                # Location
+                m = re.search(r'\{([^}]+)\} \$\|\$', l)
+                if m and not location:
+                    location = m.group(1).strip()
+            break
+
+    # --- TECHNICAL SKILLS ---
+    languages = []
+    devTools = []
+    frameworks = []
+    in_skills = False
+    for i, line in enumerate(lines):
+        if '\\section{Technical Skills}' in line:
+            in_skills = True
+        if in_skills:
+            m = re.search(r'\\textbf\{Languages\}\{:(.*?)\}', line)
+            if m:
+                languages = [x.strip() for x in m.group(1).split(',') if x.strip()]
+            m = re.search(r'\\textbf\{Developer Tools\}\{:(.*?)\}', line)
+            if m:
+                devTools = [x.strip() for x in m.group(1).split(',') if x.strip()]
+            m = re.search(r'\\textbf\{Frameworks\}\{:(.*?)\}', line)
+            if m:
+                frameworks = [x.strip() for x in m.group(1).split(',') if x.strip()]
+        if '\\end{itemize}' in line and in_skills:
+            break
+
     result = {
         "Experience": [],
         "Projects": [],
@@ -271,7 +322,20 @@ def parseFromText(text, verbose=False):
         for education in result["Education"]:
             print(f"Education: {education.school}, Degree: {education.degree}, GPA: {education.gpa}, Start Date: {education.date}, Coursework: {education.coursework}")
     
-    return result
+    # Return a User object
+    return User(
+        name=name,
+        email=email,
+        location=location,
+        phone=phone,
+        linkedin=linkedin,
+        languages=languages,
+        devTools=devTools,
+        frameworks=frameworks,
+        projects=result["Projects"],
+        experiences=result["Experience"],
+        education=result["Education"]
+    )
 
 def parseFromFile(file_path, verbose=False):
     """
