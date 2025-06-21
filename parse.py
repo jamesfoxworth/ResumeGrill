@@ -1,6 +1,7 @@
 import re
 from project import Project
 from experience import Experience
+from education import Education
 
 def preprocess_tex(lines):
     """
@@ -52,12 +53,14 @@ def parseFromText(text, verbose=False):
     
     result = {
         "Experience": [],
-        "Projects": []
+        "Projects": [],
+        "Education": []
     }
       
     current_section = None
     current_project = None
     current_experience = None
+    current_education = None
     
     # Regular expressions for parsing different sections
     section_pattern = re.compile(r'\\section\{(.*?)\}')
@@ -170,6 +173,61 @@ def parseFromText(text, verbose=False):
                 if verbose:
                     print(f"Added bullet to experience: {bullet[:50]}...")
         
+        # Parse Education section
+        elif current_section == "Education":
+            # Check for education heading
+            if verbose and "resumeSubheading" in line:
+                print(f"Checking education regex on: {line}")
+                match = experience_heading_pattern.search(line)
+                print(f"Education regex match: {match is not None}")
+                
+            education_match = experience_heading_pattern.search(line)
+            if education_match:
+                # Save previous education if exists
+                if current_education:
+                    result["Education"].append(Education(
+                        current_education["school"],
+                        current_education["date"],
+                        current_education["degree"],
+                        current_education["gpa"],
+                        current_education["coursework"]
+                    ))
+                
+                # Start new education
+                school = education_match.group(1).strip()
+                date = education_match.group(2).strip()
+                degree = education_match.group(3).strip()
+                gpa_text = education_match.group(4).strip()
+                
+                # Extract GPA from the text
+                gpa = None
+                if "GPA:" in gpa_text:
+                    gpa = gpa_text.replace("GPA:", "").strip()
+                
+                current_education = {
+                    "school": school,
+                    "date": date,
+                    "degree": degree,
+                    "gpa": gpa,
+                    "coursework": []
+                }
+                if verbose:
+                    print(f"Found education: {degree} at {school}")
+            
+            # Check for resume items/bullets (coursework)
+            item_match = resume_item_pattern.search(line)
+            if item_match and current_education:
+                bullet = item_match.group(1)
+                if "Relevant Coursework:" in bullet:
+                    # Extract coursework from the bullet
+                    coursework_text = bullet.replace("Relevant Coursework:", "").strip()
+                    coursework_list = [course.strip() for course in coursework_text.split(',')]
+                    current_education["coursework"] = coursework_list
+                else:
+                    current_education["coursework"].append(bullet)
+                if verbose:
+                    print(f"Added coursework to education: {bullet[:50]}...")
+        
         i += 1
     
     # Add the last project if any
@@ -191,14 +249,27 @@ def parseFromText(text, verbose=False):
             current_experience["end_date"]
         ))
     
+    # Add the last education if any
+    if current_education:
+        result["Education"].append(Education(
+            current_education["school"],
+            current_education["date"],
+            current_education["degree"],
+            current_education["gpa"],
+            current_education["coursework"]
+        ))
+    
     if verbose:
-        print(f"Parsed {len(result['Projects'])} projects and {len(result['Experience'])} experiences.")
+        print(f"Parsed {len(result['Projects'])} projects, {len(result['Experience'])} experiences, and {len(result['Education'])} educations.")
         
         for project in result["Projects"]:
             print(f"Project: {project.name}, Tools: {project.tools}, Bullets: {project.bullets}")
         
         for experience in result["Experience"]:
             print(f"Experience: {experience.company}, Title: {experience.title}, Location: {experience.location}, Start Date: {experience.start_date}, End Date: {experience.end_date}, Bullets: {experience.bullets}")
+        
+        for education in result["Education"]:
+            print(f"Education: {education.school}, Degree: {education.degree}, GPA: {education.gpa}, Start Date: {education.date}, Coursework: {education.coursework}")
     
     return result
 
