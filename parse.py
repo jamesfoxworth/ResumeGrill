@@ -216,5 +216,3 @@ def parseFromFile(file_path, verbose=False):
         print(f"Read {len(text)} characters from {file_path}")
     
     return parseFromText(text, verbose)
-
-parseFromFile('resume.txt', verbose=True)
