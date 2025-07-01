@@ -3,22 +3,6 @@ class Project:
         self.name = name
         self.tools = tools
         self.bullets = bullets
-    
-    def format(self):
-        # Format as in TeX
-        bullets_text = ""
-        for bullet in self.bullets:
-            bullets_text += f"\n            \\resumeItem{{{bullet}}}"
-        
-        # Format tools with proper styling
-        tools_formatted = f"$|$ \\emph{{ {', '.join(self.tools)}}}"
-        
-        section = f"""
-          \\resumeProjectHeading
-            {{\\textbf{{{self.name}}} {tools_formatted}}}{{}}
-            \\resumeItemListStart{bullets_text}
-            \\resumeItemListEnd"""
-        return section
         
     def asDict(self):
         return {

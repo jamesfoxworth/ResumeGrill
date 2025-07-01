@@ -7,19 +7,6 @@ class Experience:
         self.start_date = start_date
         self.end_date = end_date if end_date is not None else "Present"
     
-    def format(self):
-        # Format as in TeX
-        bullets_text = ""
-        for bullet in self.bullets:
-            bullets_text += f"\n                \\resumeItem{{{bullet}}}"
-        
-        section = f"""
-                \\resumeSubheading
-                    {{{self.title}}}{{{self.start_date} -- {self.end_date}}}
-                    {{{self.company}}}{{{self.location}}}
-                    \\resumeItemListStart{bullets_text}
-                    \\resumeItemListEnd"""
-        return section
     
     def asDict(self):
         return {
