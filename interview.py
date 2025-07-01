@@ -16,7 +16,7 @@ class Interviewer:
 
     def ask_openai(self, prompt, stop=None):
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4.1",
             messages=prompt,
             stop=stop
         )
